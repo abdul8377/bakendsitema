@@ -15,13 +15,15 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @router.get("/docente/dashboard", dependencies=[Depends(require_role("DOCENTE"))])
 def dashboard_docente(user=Depends(get_current_user), db: Session = Depends(get_db)):
     cursos = db.query(models.Curso).filter_by(docente_id=user.id).all()
+    total_estudiantes = db.query(models.Usuario).filter(models.Usuario.rol == "ESTUDIANTE").count()
     return {
         "id": user.id,
         "nombre": user.nombre,
         "email": user.email,
         "imagen": user.imagen,
-        "cursos": [{"id": c.id, "nombre": c.nombre} for c in cursos],
-        "total_cursos": len(cursos)
+        "cursos": [{"id": c.id, "nombre": c.nombre, "descripcion": c.descripcion} for c in cursos],
+        "total_cursos": len(cursos),
+        "total_estudiantes": total_estudiantes
     }
 
 

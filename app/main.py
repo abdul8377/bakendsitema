@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from fastapi.staticfiles import StaticFiles
+import os
 from app.api.v1.auth import router as auth_router
 from app.api.v1.cursos import router as cursos_router
 from app.api.v1.notas import router as notas_router
@@ -57,8 +59,12 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(cursos_router, prefix="/api/v1/cursos", tags=["cursos"])
 app.include_router(notas_router, prefix="/api/v1/notas", tags=["notas"])
-app.include_router(estudiantes_router, prefix="/api/v1", tags=["estudiantes"])
+app.include_router(estudiantes_router, prefix="/api/v1/estudiantes", tags=["estudiantes"])
 app.include_router(docentes_router, prefix="/api/v1", tags=["docentes"])
+
+# Servir archivos estáticos
+os.makedirs("uploaded_images", exist_ok=True)
+app.mount("/uploaded_images", StaticFiles(directory="uploaded_images"), name="uploaded_images")
 
 @app.get("/health")
 def health():

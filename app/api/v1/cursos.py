@@ -55,3 +55,28 @@ def eliminar_curso(
     db.delete(curso)
     db.commit()
     return {"ok": True}
+
+@router.get("/{curso_id}")
+def get_curso(curso_id: int, db: Session = Depends(get_db)):
+    curso = db.query(models.Curso).filter(models.Curso.id == curso_id).first()
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+    return {"id": curso.id, "nombre": curso.nombre, "descripcion": curso.descripcion, "docente_id": curso.docente_id}
+
+@router.get("/{curso_id}/estudiantes")
+def get_curso_estudiantes(curso_id: int, db: Session = Depends(get_db)):
+    # Obtener inscripciones
+    inscripciones = db.query(models.Inscripcion).filter(models.Inscripcion.curso_id == curso_id).all()
+    estudiantes = []
+    for insc in inscripciones:
+        est = db.query(models.Usuario).filter(models.Usuario.id == insc.estudiante_id).first()
+        if est:
+            # Buscar nota si existe
+            nota = db.query(models.Nota).filter(models.Nota.curso_id == curso_id, models.Nota.estudiante_id == est.id).first()
+            estudiantes.append({
+                "id": est.id,
+                "nombre": est.nombre,
+                "email": est.email,
+                "nota": nota.nota if nota else None
+            })
+    return estudiantes

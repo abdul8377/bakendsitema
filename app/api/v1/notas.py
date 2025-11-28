@@ -20,8 +20,48 @@ def crear_nota(payload: dict, user=Depends(get_current_user), db: Session = Depe
     curso = db.get(models.Curso, curso_id)
     if not curso or curso.docente_id != user.id:
         raise HTTPException(status_code=403, detail="No autorizado para calificar este curso")
+    
+    # Buscar si ya existe nota
+    nota_existente = db.query(models.Nota).filter(models.Nota.curso_id == curso_id, models.Nota.estudiante_id == estudiante_id).first()
+    
+    if nota_existente:
+        nota_existente.nota = nota_val
+        db.commit()
+        db.refresh(nota_existente)
+        return {"id": nota_existente.id, "curso_id": nota_existente.curso_id, "nota": nota_existente.nota}
+    
     nota = models.Nota(estudiante_id=estudiante_id, curso_id=curso_id, nota=nota_val)
     db.add(nota)
     db.commit()
     db.refresh(nota)
     return {"id": nota.id, "curso_id": nota.curso_id, "nota": nota.nota}
+
+@router.put("/{curso_id}/{estudiante_id}", dependencies=[Depends(require_role("DOCENTE"))])
+def actualizar_nota(
+    curso_id: int, 
+    estudiante_id: int, 
+    payload: dict, 
+    user=Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    # Validar que el docente es dueño del curso
+    curso = db.query(models.Curso).filter(models.Curso.id == curso_id).first()
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+    if curso.docente_id != user.id:
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    nota_val = float(payload.get("nota"))
+    
+    # Buscar nota existente
+    nota = db.query(models.Nota).filter(models.Nota.curso_id == curso_id, models.Nota.estudiante_id == estudiante_id).first()
+    
+    if nota:
+        nota.nota = nota_val
+    else:
+        nota = models.Nota(estudiante_id=estudiante_id, curso_id=curso_id, nota=nota_val)
+        db.add(nota)
+    
+    db.commit()
+    db.refresh(nota)
+    return {"ok": True, "nota": nota.nota}

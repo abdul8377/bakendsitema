@@ -8,6 +8,7 @@ class DocenteOut(BaseModel):
     id: int
     nombre: str
     email: str
+    rol: str
     imagen: Optional[str]
 
     class Config:
